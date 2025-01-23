@@ -1,7 +1,10 @@
 from fastapi import FastAPI
-from app.config import settings
+from app.routes.exams import router as exams_router
 
 app = FastAPI()
+
+# Register routers
+app.include_router(exams_router, prefix="/exams", tags=["Exams"])
 
 @app.get("/")
 def root():
