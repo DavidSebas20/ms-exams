@@ -1,9 +1,10 @@
-from fastapi import APIRouter, HTTPException, UploadFile, Form
+from fastapi import APIRouter, HTTPException, UploadFile, Form, Query
 from app.models import Exam
 from app.database import table, s3_client
 import uuid
 from datetime import datetime
 from app.config import settings
+from typing import List
 
 router = APIRouter()
 
@@ -48,9 +49,33 @@ def create_exam(
     table.put_item(Item=exam)
     return exam
 
+@router.get("/by-patient/", response_model=List[Exam])
+def list_exams_by_patient(patient_id: str = Query(..., description="ID del paciente")):
+    """
+    Busca todos los exámenes asociados a un paciente específico.
+    """
+    # Usa un filtro en la operación scan de DynamoDB
+    response = table.scan(
+        FilterExpression="patient_id = :pid",
+        ExpressionAttributeValues={":pid": patient_id}
+    )
+    
+    items = response.get("Items", [])
+    
+    if not items:
+        raise HTTPException(status_code=404, detail=f"No exams found for patient_id: {patient_id}")
+    
+    return items
+
 @router.delete("/{exam_id}")
 def delete_exam(exam_id: str):
-    response = table.delete_item(Key={"exam_id": exam_id})
-    if response.get("ResponseMetadata", {}).get("HTTPStatusCode") != 200:
-        raise HTTPException(status_code=500, detail="Error deleting exam")
-    return {"message": "Exam deleted successfully"}
+    try:
+        # Intenta eliminar el ítem con una condición: el ítem debe existir
+        response = table.delete_item(
+            Key={"exam_id": exam_id},
+            ConditionExpression="attribute_exists(exam_id)"
+        )
+        return {"message": "Exam deleted successfully"}
+    except table.meta.client.exceptions.ConditionalCheckFailedException:
+        # Si el ítem no existe, DynamoDB lanza esta excepción
+        raise HTTPException(status_code=404, detail="Exam not found")
