@@ -7,7 +7,7 @@ dynamodb = boto3.resource(
     region_name=settings.aws_region,
     aws_access_key_id=settings.aws_access_key_id,
     aws_secret_access_key=settings.aws_secret_access_key,
-    aws_session_token=settings.aws_session_token  # Asegúrate de incluir el token de sesión
+    aws_session_token=settings.aws_session_token 
 )
 table = dynamodb.Table(settings.dynamodb_table)
 
@@ -17,5 +17,5 @@ s3_client = boto3.client(
     region_name=settings.aws_region,
     aws_access_key_id=settings.aws_access_key_id,
     aws_secret_access_key=settings.aws_secret_access_key,
-    aws_session_token=settings.aws_session_token  # Asegúrate de incluir el token de sesión
+    aws_session_token=settings.aws_session_token 
 )
